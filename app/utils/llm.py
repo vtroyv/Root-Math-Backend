@@ -131,3 +131,7 @@ def grade_feedback(feedBackData: dict) -> dict:
             "error": "Invalid GPT Response format or schema",
             "raw_response": raw_response
         }
+
+
+def sketch_feedback(feedBackData: dict) -> dict:
+    pass
