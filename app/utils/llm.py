@@ -1,5 +1,3 @@
-# IN this file we will use GPT to interact with Sympy and attempt to mark the student's work
-
 import os
 import json
 from dotenv import load_dotenv
@@ -27,7 +25,7 @@ def grade_feedback(feedBackData: dict) -> dict:
     student_work_sympy = feedBackData["usersSympyResponse"]
 
     # STEP 1: Separate out known top-level keys from 'structured-output'
-    # (like totalMarks, finalFeedback) from the mark-specific keys (like firstMark, secondMark, etc.).
+    # (like totalMarks, finalFeedback) from the mark-specific keys (e.g., firstMark, secondMark, etc.).
     mark_criteria: Dict[str, str] = {}
     total_marks_instructions = ""
     final_feedback_instructions = ""
@@ -40,7 +38,7 @@ def grade_feedback(feedBackData: dict) -> dict:
         else:
             mark_criteria[key] = instruction
 
-    # STEP 2: Build an example JSON "skeleton" for GPT to follow.
+    # STEP 2: Build an example JSON skeleton for GPT to follow.
     marks_example = {
         "marks": {
             k: {"feedback": f"<feedback for {k} here>"}
@@ -52,6 +50,7 @@ def grade_feedback(feedBackData: dict) -> dict:
     example_json_str = json.dumps(marks_example, indent=2)
 
     # STEP 3: Construct system message to force valid JSON.
+    # NOTE the added instruction: "Double-escape backslashes in math expressions..."
     system_message = {
         "role": "system",
         "content": (
@@ -62,11 +61,18 @@ def grade_feedback(feedBackData: dict) -> dict:
             "Where 'marks' is an object with each dynamic key, "
             "and each key has a single 'feedback' field (string). "
             "'totalMarks' is a string. 'finalFeedback' is a string.\n"
-            "No additional fields are allowed."
+            "No additional fields are allowed.\n\n"
+
+            "IMPORTANT:\n"
+            "1. When you include a LaTeX backslash (e.g. \\sqrt), you MUST double-escape "
+            "   it for valid JSON. That means you write \"\\\\sqrt\" in the JSON.\n"
+            "2. Make sure the dynamic mark keys match exactly: e.g. 'thirdMark' not 'thridMark'.\n"
+            "3. Return only valid JSON with double quotes for all strings. No extra keys.\n"
         )
     }
 
     # STEP 4: Build user/developer messages with the student's work + instructions.
+    #         Also emphasize the double-backslash requirement in the user prompt.
     user_messages = [
         {
             "role": "developer",
@@ -87,17 +93,15 @@ def grade_feedback(feedBackData: dict) -> dict:
                 "  \"marks\": {\n"
                 "    \"firstMark\": { \"feedback\": \"...\" },\n"
                 "    \"secondMark\": { \"feedback\": \"...\" },\n"
+                "    \"thirdMark\": { \"feedback\": \"...\" },\n"
                 "    ...\n"
                 "  },\n"
                 "  \"totalMarks\": \"...\",\n"
                 "  \"finalFeedback\": \"...\"\n"
                 "}\n\n"
                 "No additional fields are allowed. Do not wrap it in triple backticks or markdown.\n\n"
-                "**Important**: Whenever you include a mathematical expression in the 'feedback' fields, "
-                "wrap it using **dollar sign** notation. For example:\n"
-                "  $ (p + q)^2 $   or   $ \\sqrt{4pq} $.\n\n"
-                "Do NOT use backslash parentheses (\\( ... \\)). Just use $ ... $ for math.\n\n"
-                "Only wrap the math; do not wrap normal text in LaTeX.\n\n"
+                "**Important**: For math expressions, wrap them in dollar signs, and double-escape backslashes.\n"
+                "For example, `$ \\sqrt{4pq} $` must appear as `\"$ \\\\sqrt{4pq} $\"` in valid JSON.\n\n"
                 "Return the JSON object only, with no extra text."
             )
         }
