@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from typing import Dict
 from pydantic import ValidationError
-from ..models.fullResponseModel import GPTStructuredResponse
+from ..models.question_full_response_model import GPTStructuredResponse
 
 # Load environment variables from .env file
 load_dotenv()
@@ -123,7 +123,7 @@ def grade_feedback(feedBackData: dict) -> dict:
     try:
         json_data = json.loads(raw_response)
         validated = GPTStructuredResponse(**json_data)
-        return validated.dict()  # Return a dict to the router
+        return validated.model_dump()  # Return a dict to the router
     except (json.JSONDecodeError, ValidationError) as e:
         print("[ERROR] GPT response invalid:\n", e)
         print("[ERROR] Raw GPT response :\n", raw_response)
@@ -135,3 +135,78 @@ def grade_feedback(feedBackData: dict) -> dict:
 
 def sketch_feedback(feedBackData: dict) -> dict:
     pass
+
+def grade_lesson_feedback(feedBackData: dict) -> dict:
+    """
+    Calls GPT to generate a structured marking response with a dynamic set of 'marks' keys.
+    """
+   
+    task_data = feedBackData.task
+    latex = feedBackData.latexInput
+    gpt = task_data.task.gpt
+    instructions = task_data.task.instructions
+
+    print('The task_data is ', task_data)
+    print('The latex of the students response is ', latex)
+    # print(f"The gpt data is {task_data}")
+    
+    #Step 1: Build an example JSON skeleton for GPT to follow
+    feedback_example = {
+        "feedback": "<Concise feedback for task text>", 
+        "correct": "<true or false bool for task boolean>"
+    }
+    
+    feedback_example_json_str =json.dumps(feedback_example, indent=2)
+    
+    print(f"The feedback_example will look liks {feedback_example_json_str}")
+    
+    #Step 2: Construct a system message to force valud JSON.
+    # NOTE the added instruction: "Double-escape backslashes in math expressions..."
+    
+    system_message ={
+        "role":"system", 
+        "content": (
+            "You are an assistant that provides structured feedback in valid JSON format."
+            "DO NOT return any extra keys, and do not wrap it in markdown. "
+            "The JSON MUST match this shape: \n\n"
+            f"{feedback_example_json_str}\n\n"
+            "NO additional fields are allowed.\n\n"
+             "IMPORTANT:\n"
+             "1. WHen you include a Latex backslash (e.g. \\sqrt or \\cdot), you MUST double-escape "
+             " it for valid JSON. That means you write \"\\\\sqrt\" in the JSON. \n"
+             "2. Return only valid JSON with double quotes for all strings. No extra keys. \n"
+        )
+    }
+    
+    #Step 3: Build user/developer messages with the student's work + instructions
+    #Also emphasize the double-backslash requirement in the user prompt
+    
+    user_messages=[
+        {
+            "role": "developer", 
+            "content":gpt
+        },
+        {
+            "role":"use", 
+            "content": (
+                f"Here is the student's work in latex: \n{latex}"
+                f"Here are the instrunctions for checking if the students work is correct or incorrect: \n{instructions}"
+                "Please ouput **only** valid JSON with the exact shape shown below. "
+                "Use double quotes for all keys/strings. Return no extra text, disclaimers, or code blocks. \n\n"
+                "The required JSON structure is: \n\n"
+                "{\n"
+                "  \"feedback\":  "
+                    
+            )
+            
+        }
+    ]
+    
+    
+    
+    return 'testing'
+    
+    
+    
+    
+
