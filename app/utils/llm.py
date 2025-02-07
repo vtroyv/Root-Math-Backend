@@ -5,6 +5,7 @@ from openai import OpenAI
 from typing import Dict
 from pydantic import ValidationError
 from ..models.question_full_response_model import GPTStructuredResponse
+from ..models.lesson_response_model import GPTLessonStructedResponse
 
 # Load environment variables from .env file
 load_dotenv()
@@ -152,7 +153,7 @@ def grade_lesson_feedback(feedBackData: dict) -> dict:
     
     #Step 1: Build an example JSON skeleton for GPT to follow
     feedback_example = {
-        "feedback": "<Concise feedback for task text>", 
+        "feedback": "<Concise feedback for task but state the reason for students work being incorrect or correct text>", 
         "correct": "<true or false bool for task boolean>"
     }
     
@@ -187,7 +188,7 @@ def grade_lesson_feedback(feedBackData: dict) -> dict:
             "content":gpt
         },
         {
-            "role":"use", 
+            "role":"user", 
             "content": (
                 f"Here is the student's work in latex: \n{latex}"
                 f"Here are the instrunctions for checking if the students work is correct or incorrect: \n{instructions}"
@@ -195,17 +196,47 @@ def grade_lesson_feedback(feedBackData: dict) -> dict:
                 "Use double quotes for all keys/strings. Return no extra text, disclaimers, or code blocks. \n\n"
                 "The required JSON structure is: \n\n"
                 "{\n"
-                "  \"feedback\":  "
-                    
+                "  \"feedback\": \"...\", \n "
+                "\" correct\": \"True || False\" \n"
+                "}\n\n"
+                "No additional fields are allowed. Do not wrap it in triple backticks or markdown. \n\n"
+                "Please do not include the actual answer in your feedback only a hint or the reason why the student is incorrect"
+                "**Important**: Fpr math expressions, essentially any latex, wrap them in dollar signs, and double-escape backslashes. \n"
+                "For example, `$ \\sqrt{4pq} $` must appear as `\"$ \\\\sqrt{4pq} $\"` in valid JSON.\n\n"
+                "Return the JSON object only, with no extra text."
             )
             
         }
     ]
+    #Step 4: Call the OpenAI API
+    completion = client.chat.completions.create(
+        model ="chatgpt-4o-latest",
+        messages=[system_message] + user_messages,
+        temperature=0.7, 
+        max_tokens=2000, 
+        store=True
+    )
     
     
+    raw_response = completion.choices[0].message.content.strip()
+    print(f"[DEBUG] GPT raw response: \n{raw_response}")
     
-    return 'testing'
+    #STEP 5: Validate the response with pydantic 
+    try:
+        json_data = json.loads(raw_response)
+        print(f"The json_data is {json_data}")
+        validated= GPTLessonStructedResponse(**json_data)
+        return validated.model_dump()
+    except (json.JSONDecodeError, ValidationError) as e:
+        print("[ERROR] GPT Response invalid: \n", e)
+        print("[ERROR] Raw GPT response: \n", raw_response)
+        return{
+            "error": "Invalid GPT Response format or schema",
+            "raw_response": raw_response
+        }
+        
     
+
     
     
     

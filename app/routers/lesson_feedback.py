@@ -20,11 +20,11 @@ async def feedback(response: StudentResponse):
     # You will have to call grade_lesson_feedback to get the feedback for the lesson, 
     #It should return the feedback as well as a boolean correct :true or false 
     
-    test = grade_lesson_feedback(response)
+    structured_lesson_feedback = grade_lesson_feedback(response)
     # print(f"The test is {test}")
     
     
-    return ({"feedback": 'weel done this is from fastAPI',"correct": True})
+    return (structured_lesson_feedback)
     
 app.include_router(router)
 
