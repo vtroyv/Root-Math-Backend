@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List
 class TaskDetails(BaseModel):
     type: str
     title: str
@@ -12,7 +13,8 @@ class Task(BaseModel):
     
 class StudentResponse(BaseModel):
     task: Task
-    latexInput: str
+    # you will need to change the latexInput to be a List[str]
+    latexInput: List[str]
     
 class GPTLessonStructedResponse(BaseModel):
     """The overall structured response from GPT for lesson Feedback questions

@@ -4,6 +4,7 @@ from typing import List, Dict, Any
 from ..utils.preprocess_sympy import preprocess_sympy
 from ..utils.llm import grade_lesson_feedback
 from ..models.lesson_response_model import StudentResponse
+from ..utils.preprocess_sympy import preprocess_sympy
 
 app = FastAPI()
 
@@ -19,6 +20,14 @@ async def feedback(response: StudentResponse):
     # print(f"The original latex sent ot fastAPI is {response.latexInput}")
     # You will have to call grade_lesson_feedback to get the feedback for the lesson, 
     #It should return the feedback as well as a boolean correct :true or false 
+    
+    try:
+        test = preprocess_sympy
+        print(test)
+    except:
+        print('could\'t clearn up the sympy ')
+        pass
+    
     
     structured_lesson_feedback = grade_lesson_feedback(response)
     # print(f"The test is {test}")
