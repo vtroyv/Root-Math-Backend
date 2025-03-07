@@ -165,7 +165,7 @@ def grade_lesson_feedback(feedBackData: dict) -> dict:
     # NOTE the added instruction: "Double-escape backslashes in math expressions..."
     
     system_message ={
-        "role":"system", 
+        "role":"user", # --->change this to developer when you get tier3 access 
         "content": (
             "You are an assistant that provides structured feedback in valid JSON format."
             "DO NOT return any extra keys, and do not wrap it in markdown. "
@@ -184,7 +184,7 @@ def grade_lesson_feedback(feedBackData: dict) -> dict:
     
     user_messages=[
         {
-            "role": "developer", 
+            "role": "user", #----> Change this to developer when you get tier 3 access
             "content":gpt
         },
         {
@@ -210,11 +210,11 @@ def grade_lesson_feedback(feedBackData: dict) -> dict:
     ]
     #Step 4: Call the OpenAI API
     completion = client.chat.completions.create(
-        model ="chatgpt-4o-latest",
+        model ="o1-mini",
         messages=[system_message] + user_messages,
-        temperature=0.7, 
-        max_tokens=2000, 
-        store=True
+        temperature=1, 
+        max_completion_tokens=2000 
+        # store=True
     )
     
     
@@ -235,9 +235,7 @@ def grade_lesson_feedback(feedBackData: dict) -> dict:
             "raw_response": raw_response
         }
         
-    
 
-    
-    
-    
+def ask_tutor_response(promptData: dict) -> dict:
+    pass
 
