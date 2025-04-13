@@ -6,4 +6,5 @@ class PromptResponse(BaseModel):
     title: str
     currentUrl: str
     latestConversation: List[Dict]
+    lessonContext: Dict
     

@@ -11,4 +11,7 @@ async def ask_tutor(prompt: PromptResponse):
 # Now that we can sucessfully obtain the prompt it's time to connect it to gpt 
 # In addition it may be especially wise to also collect state data from the question/lesson and use this to help prompt engineer/ provide context 
 #
+    print(prompt.lessonContext['tasks'])
+    # Now we simply need a way to distinguish the currentTask being mentioned in the prompt,
+    #as well as perhaps the context of the currentLessonPart.
     return {"prompt": prompt}

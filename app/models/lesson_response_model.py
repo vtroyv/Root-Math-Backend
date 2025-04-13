@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Dict
 class TaskDetails(BaseModel):
     type: str
     title: str
@@ -23,4 +23,27 @@ class GPTLessonStructedResponse(BaseModel):
     """
     feedback: str
     correct: bool
+
+class SelectedChoice(BaseModel):
+    url: str
+    alt: str
+    width: int
+    height: int
+    isCorrect: bool
+    explanation: str
+    
+
+class MultipleChoiceImage(BaseModel):
+    """The overall structured response from GPT for feedback for lesson questions 
+    which are of the multipleChoice image type
+    """
+    task: Task
+    selectedChoice: SelectedChoice
+    taskType: str
+    
+class Sketch(BaseModel):
+    task: Task
+    reducedCoordinates: List[Dict[str, float]]
+    taskType: str
+    
     

@@ -236,6 +236,18 @@ def grade_lesson_feedback(feedBackData: dict) -> dict:
         }
         
 
+def multiple_choice_image_response(feeddBackData: dict) -> dict:
+    # This function will be slightly different starting off in the initial MVP version it won't be using any llm powered capabilities
+    # However down the line I seek to use llm powered capabilities to input actual images and provide more unique feedback
+    
+    #FIRST OF ALL YOU NEED TO READ THE EXPLANATION AND CORRECT OR INCORRECT FROM THE TASK
+    print('The feedback data is ', feeddBackData)
+    return ({
+        "feedback": "This is a multiple choice image response",
+        "correct": True
+    })
+
+
 def ask_tutor_response(promptData: dict) -> dict:
     pass
 

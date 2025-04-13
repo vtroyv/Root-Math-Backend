@@ -2,8 +2,8 @@ from fastapi import FastAPI, APIRouter
 from pydantic import BaseModel
 from typing import List, Dict, Any
 from ..utils.preprocess_sympy import preprocess_sympy
-from ..utils.llm import grade_lesson_feedback
-from ..models.lesson_response_model import StudentResponse
+from ..utils.llm import grade_lesson_feedback, multiple_choice_image_response
+from ..models.lesson_response_model import StudentResponse, MultipleChoiceImage, Sketch
 from ..utils.preprocess_sympy import preprocess_sympy
 
 app = FastAPI()
@@ -15,13 +15,20 @@ app = FastAPI()
 
 router = APIRouter(prefix='/lesson-feedback')
 
+@router.post("/multiple-choice-images")
+async def feedback_multiple_choice_images(response: MultipleChoiceImage):
+    feedback_MCI = multiple_choice_image_response(response)
+    return(feedback_MCI)
+
+@router.post("/sketch")
+async def feedback_sketch(response: Sketch):
+    print(f"The sketch response is  {response}")
+    return(response)
+
+    
+
 @router.post("/")
 async def feedback(response: StudentResponse):
-    # print(f"The original task sent to fastAPI is {response.task} ")
-    # print(f"The original latex sent ot fastAPI is {response.latexInput}")
-    # You will have to call grade_lesson_feedback to get the feedback for the lesson, 
-    #It should return the feedback as well as a boolean correct :true or false 
-    
     
     try:
         test = preprocess_sympy
@@ -32,11 +39,16 @@ async def feedback(response: StudentResponse):
     
     
     structured_lesson_feedback = grade_lesson_feedback(response)
-    # print(f"The test is {test}")
+
     
     
     return (structured_lesson_feedback)
     
+    
+    
+
 app.include_router(router)
+
+
 
 # This is where your router logic will go to enable you to process the result.
