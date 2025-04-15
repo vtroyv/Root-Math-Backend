@@ -5,6 +5,8 @@ from ..utils.preprocess_sympy import preprocess_sympy
 from ..utils.llm import grade_lesson_feedback, multiple_choice_image_response
 from ..models.lesson_response_model import StudentResponse, MultipleChoiceImage, Sketch
 from ..utils.preprocess_sympy import preprocess_sympy
+from ..utils.lesson_task_utils.sketch.lagrange_interpolation import lagrange_implementation
+from ..utils.lesson_task_utils.sketch.sketch_task_feedback import feedback_sketch_task
 
 app = FastAPI()
 
@@ -22,7 +24,12 @@ async def feedback_multiple_choice_images(response: MultipleChoiceImage):
 
 @router.post("/sketch")
 async def feedback_sketch(response: Sketch):
-    print(f"The sketch response is  {response}")
+    feedback = feedback_sketch_task(response)
+    
+    
+
+    
+    
     return(response)
 
     

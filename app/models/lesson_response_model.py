@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Any
 class TaskDetails(BaseModel):
     type: str
     title: str
@@ -41,9 +41,27 @@ class MultipleChoiceImage(BaseModel):
     selectedChoice: SelectedChoice
     taskType: str
     
+class SketchTaskDetails(BaseModel):
+    type: str
+    title: str
+    instructions: str
+    hint: str
+    gpt: str
+    renderType: str
+    marking: dict
+    
+class SketchTask(BaseModel):
+    status: str
+    task: SketchTaskDetails
+    
+    
 class Sketch(BaseModel):
-    task: Task
+    task: SketchTask
     reducedCoordinates: List[Dict[str, float]]
     taskType: str
+
+    
+    
+    
     
     
