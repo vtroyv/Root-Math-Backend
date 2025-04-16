@@ -1,34 +1,38 @@
 from ..sketch.lagrange_interpolation import lagrange_implementation
 from sympy import symbols
 
-def limit(func, guide):
-    """Return the True or False if a function approaches it's desired limit
-    ---------------------------------------------
+def limit(func, guide: dict) -> dict:
+    """Return True or False if a function is approaching its desired limit.
+    
     Cases: 
-    -> If simply a set of n coordinates are given first apply lagrange_interpolation to determine a approximate polynomial of (n-1)th degree, then 
-    extract the limits and determine the output [Probably need to rewrite this clearer at some point]
+      - When a list of points is provided, use lagrange_interpolation to determine 
+        an approximate polynomial and then evaluate its behavior at the indicated limits.
     
+    The 'guide' dict is expected to have a key 'limit-values' with a list of dictionaries:
+       {"x": <x-coordinate>, "y": <target limit value>, "threshold": <acceptable deviation>}
     
-    Returns -> {correct, limits}
-    -----------------------------
+    For a negative target value, the function is considered as approaching the limit 
+    if its output is less than or equal to the target. If it's greater, then it must 
+    be within the threshold (i.e. the difference is less than the threshold) to return True.
     
-    -> correct: True or False
-                If a function displays desired behaviour when 
+    For a positive target value, the logic is symmetric: the function output must be 
+    greater than or equal to the target, or if lower, within the threshold.
     
-    
-    
-    
+    Returns:
+       A dictionary with keys:
+         - "correct": bool indicating if all comparisons were acceptable.
+         - "comparison": list of tuples (output_value, target_value) for each limit point.
     """
-
     if isinstance(func, list):
         lagrange_func = lagrange_implementation(func)
-        print('The limits guide is ', guide)
-        #Now you need to add logic here to evaluate the limit of a function using the guide and the lagrange_func
+        print('The limits guide is:', guide)
+        
+        # Extract limit values from the guide
         limit_values = guide['limit-values']
         x_values = []
-        target_values =[]
-        thresholds =[]
-        output_values=[]
+        target_values = []
+        thresholds = []
+        output_values = []
         
         for i in limit_values:
             x_values.append(i['x'])
@@ -36,36 +40,41 @@ def limit(func, guide):
             thresholds.append(i['threshold'])
              
         x = symbols('x')
-        for i in x_values:
-            output_values.append(lagrange_func.subs(x,i).evalf())
+        for x_val in x_values:
+            output_values.append(lagrange_func.subs(x, x_val).evalf())
             
-        print(f"The output values are {output_values}")
-        #Now we simply need to compare our output values with our target values and see if each output exceeds it's corresponding output 
-        truth_list=[]
-        comparison = zip(output_values, target_values)
-        for i in comparison:
-            if (i[0] >= i[1]):
-                truth_list.append(True)
-            elif (i[1] - i[0] < thresholds[i]):
-                truth_list.append(True)
+        print(f"The output values are: {output_values}")
+        
+        # Compare each output value with its corresponding target value and threshold.
+        truth_list = []
+        for out_val, target_val, thresh in zip(output_values, target_values, thresholds):
+            # For negative target values: expecting outputs to be less than or equal.
+            if target_val < 0:
+                if out_val <= target_val:
+                    truth_list.append(True)
+                elif out_val > target_val and (out_val - target_val) < thresh:
+                    truth_list.append(True)
+                else:
+                    truth_list.append(False)
+            # For positive target values: expecting outputs to be greater than or equal.
             else:
-                truth_list.append(False)
-        print(f"The truth_list is  {truth_list}")
-        print(f"the comparison is {comparison}")
+                if out_val >= target_val:
+                    truth_list.append(True)
+                elif out_val < target_val and (target_val - out_val) < thresh:
+                    truth_list.append(True)
+                else:
+                    truth_list.append(False)
+        
+        # Create a combined comparison list for debugging or output
+        comparison_list = list(zip(output_values, target_values))
+        print(f"Comparison list: {comparison_list}")
+        print(f"Truth list: {truth_list}")
             
         correct = all(truth_list)
-        print('the comparison is ', list(comparison))
+        print('Final comparison:', comparison_list)
         
-        return {correct, list(comparison)}
+        return {"correct": correct, "comparison": comparison_list}
     
-    
-    
-        
     else: 
-        #Put implementation logic here in the case where a function is given to evaluate the limt of it using the guide 
+        # Put implementation logic here for the case where func is not a list
         pass
-        
-    
-    
-    
-    

@@ -24,13 +24,15 @@ async def feedback_multiple_choice_images(response: MultipleChoiceImage):
 
 @router.post("/sketch")
 async def feedback_sketch(response: Sketch):
+    print(f"The reponse is {response}")
     feedback = feedback_sketch_task(response)
+    print(f"The feedback is {feedback}")
     
     
 
     
     
-    return(response)
+    return(feedback)
 
     
 
