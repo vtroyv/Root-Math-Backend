@@ -1,13 +1,14 @@
 from fastapi import FastAPI, APIRouter
 from pydantic import BaseModel
 from typing import List, Dict, Any
-from ..utils.preprocess_sympy import preprocess_sympy
-from ..utils.llm import grade_lesson_feedback, multiple_choice_image_response
-from ..models.lesson_response_model import StudentResponse, MultipleChoiceImage, Sketch, MultipleChoice
-from ..utils.preprocess_sympy import preprocess_sympy
+from ..utils.others.preprocess_sympy import preprocess_sympy
+from ..utils.others.llm import grade_lesson_feedback, multiple_choice_image_response
+from ..models.lesson_response_model import StudentResponse, MultipleChoiceImage, Sketch, MultipleChoice, QuestionImage
+from ..utils.others.preprocess_sympy import preprocess_sympy
 from ..utils.lesson_task_utils.sketch.lagrange_interpolation import lagrange_implementation
 from ..utils.lesson_task_utils.sketch.sketch_task_feedback import feedback_sketch_task
 from ..utils.lesson_task_utils.multiple_choice.multiple_choice_task_feedback import multiple_choice_response
+from ..utils.lesson_task_utils.question_image.question_image_task_feedback import feedback_question_image
 
 app = FastAPI()
 
@@ -36,7 +37,12 @@ async def feedback_multiple_choice(response: MultipleChoice):
     feedback = multiple_choice_response(response)
     return feedback
 
+
+@router.post("/image")
+async def feedback_image(response: QuestionImage):
     
+    feedback = feedback_question_image(response)
+    return 'test'
 
 @router.post("/")
 async def feedback(response: StudentResponse):
@@ -55,7 +61,7 @@ async def feedback(response: StudentResponse):
     
     return (structured_lesson_feedback)
     
-    
+
     
 
 app.include_router(router)

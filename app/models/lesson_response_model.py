@@ -70,8 +70,31 @@ class MultipleChoice(BaseModel):
     selectedChoice: SelectedChoice
     taskType: str
     
+class QuestionImageTaskDetails(BaseModel):
+    type: str
+    title: str
+    instructions: str
+    hint: str
+    gpt: str
+    url: str
+    alt: str
+    caption: str
+    latex: str
+    renderType: str
+    description: str
+    
+class QuestionImageTask(BaseModel):
+    status: str
+    task: QuestionImageTaskDetails
+    
+class QuestionImage(BaseModel):
+    task: QuestionImageTask
+    compiledStrings: List[str]
+    taskType: str
+    
 
     
+
     
     
     

@@ -1,8 +1,8 @@
 from fastapi import FastAPI, APIRouter
 from pydantic import BaseModel
 from typing import List, Dict, Any
-from ..utils.preprocess_sympy import preprocess_sympy
-from ..utils.llm import grade_feedback
+from ..utils.others.preprocess_sympy import preprocess_sympy
+from ..utils.others.llm import grade_feedback
 
 app = FastAPI()
 

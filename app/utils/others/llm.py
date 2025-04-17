@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from typing import Dict
 from pydantic import ValidationError
-from ..models.question_full_response_model import GPTStructuredResponse
-from ..models.lesson_response_model import GPTLessonStructedResponse
+from ...models.question_full_response_model import GPTStructuredResponse
+from ...models.lesson_response_model import GPTLessonStructedResponse
 
 # Load environment variables from .env file
 load_dotenv()
