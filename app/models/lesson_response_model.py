@@ -24,7 +24,7 @@ class GPTLessonStructedResponse(BaseModel):
     feedback: str
     correct: bool
 
-class SelectedChoice(BaseModel):
+class SelectedChoiceImage(BaseModel):
     url: str
     alt: str
     width: int
@@ -38,7 +38,7 @@ class MultipleChoiceImage(BaseModel):
     which are of the multipleChoice image type
     """
     task: Task
-    selectedChoice: SelectedChoice
+    selectedChoice: SelectedChoiceImage
     taskType: str
     
 class SketchTaskDetails(BaseModel):
@@ -60,7 +60,17 @@ class Sketch(BaseModel):
     reducedCoordinates: List[Dict[str, float]]
     taskType: str
 
+class SelectedChoice(BaseModel):
+    text: str
+    isCorrect: bool
+    explanation: str
     
+class MultipleChoice(BaseModel):
+    task: Task
+    selectedChoice: SelectedChoice
+    taskType: str
+    
+
     
     
     
