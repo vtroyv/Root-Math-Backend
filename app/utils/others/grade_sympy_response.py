@@ -31,9 +31,14 @@ def evaluate_correctness(
     """
   
     names = sympy_response['meta_data']['symbols']
+    print('THe names are ', names)
     syms = symbols(names)
     local_dict = dict(zip(names, syms))
-
+    print('The local_dict is ', local_dict)
+    
+    
+    
+    
     out: List[Union[str, bool]] = []
     eq_ineq = []
     for piece in sympy_response['meta_data']['response']:
@@ -91,7 +96,7 @@ def evaluate_correctness(
         if isinstance(expr, Relational) and expr.free_symbols:
             try:
                 taut = reduce_inequalities([expr], *expr.free_symbols)
-                print(f"the taut is {taut}")
+        
                 
                 if taut is True or taut is S.true:
                     out.append(True)
@@ -129,6 +134,8 @@ def evaluate_correctness(
     
     grouped = zip(sympy_response['meta_data']['response'], out)
     evaluated_response = [(x,y) if x != y else x for x,y in grouped ]
+    
+
     return evaluated_response
    
 

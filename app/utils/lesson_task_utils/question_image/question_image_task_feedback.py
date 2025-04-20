@@ -23,6 +23,13 @@ def feedback_question_image(response: dict) -> dict:
     responseEvaluation= evaluate_correctness(sympyResponse)
     print('The evaluated response is ', responseEvaluation)
     
+    markScheme = response.task.task.markScheme
+    
+    
+    feedback = evaluate_context(responseEvaluation, markScheme)
+    
+    print(f"The feedback returned is {feedback}", )
+    
     
     
     

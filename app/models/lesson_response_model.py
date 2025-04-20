@@ -70,6 +70,9 @@ class MultipleChoice(BaseModel):
     selectedChoice: SelectedChoice
     taskType: str
     
+    
+
+    
 class QuestionImageTaskDetails(BaseModel):
     type: str
     title: str
@@ -82,6 +85,8 @@ class QuestionImageTaskDetails(BaseModel):
     latex: str
     renderType: str
     description: str
+    markScheme: Dict[str, Any]
+
     
 class QuestionImageTask(BaseModel):
     status: str
