@@ -1,6 +1,11 @@
-from sympy import sympify, Eq, And
-from typing import List
 import re
+from typing import List
+from sympy.parsing.sympy_parser import parse_expr, standard_transformations
+from sympy import Eq, And
+
+# Configure parser to avoid automatic evaluation
+transformations = standard_transformations
+
 
 def remove_outer_parens(s: str) -> str:
     """
@@ -10,113 +15,84 @@ def remove_outer_parens(s: str) -> str:
     """
     s = s.strip()
     if s.startswith("(") and s.endswith(")"):
-        # Check if by removing the first and last char
-        # we still have a valid "balance" or typical expression.
-        # For simple cases, we can do the naive approach:
         inner = s[1:-1].strip()
-        # You can do deeper checks if needed, but typically one pass is enough.
         return inner
     return s
+
 
 def convert_condition(cond: str) -> str:
     """
     1) Remove one outer layer of parentheses from the entire cond.
     2) If '==' is present, split into LHS/RHS -> Eq(LHS, RHS).
-    3) Otherwise, leave the inequality as-is.
-       (Sympy can parse strings like '4*p*q < (p + q)**2'.)
+    3) Otherwise, leave the inequality (or !=) as-is.
     """
-    # Remove any outer parentheses first
     cond = remove_outer_parens(cond.strip())
 
     if "==" in cond:
         parts = cond.split("==")
-        # Handle only the common case of a single '==' 
-        # (if there's chaining like a == b == c, you'll need more logic)
         if len(parts) == 2:
             lhs = remove_outer_parens(parts[0].strip())
             rhs = remove_outer_parens(parts[1].strip())
             return f"Eq({lhs}, {rhs})"
-        else:
-            # If there's something unusual like multiple ==, handle accordingly.
-            # We'll just return cond unchanged or raise an error.
-            return cond
-    else:
-        # It's an inequality or something else. Just leave it as-is so sympy can parse it.
         return cond
+    # leave all other relations (<, >, <=, >=, !=) intact
+    return cond
+
 
 def convert_equals_and_ands(line: str) -> str:
     """
     1) Split the line by '&&' to get sub-conditions.
-    2) Convert each sub-condition with convert_condition (which 
-       replaces '==' with Eq(...) or leaves inequalities alone).
+    2) Convert each sub-condition with convert_condition.
     3) If >1 sub-condition, wrap them in And(...).
     """
     sub_conditions = line.split("&&")
     converted = [convert_condition(sc.strip()) for sc in sub_conditions]
 
     if len(converted) == 1:
-        # Just a single condition
         return converted[0]
-    else:
-        # Multiple conditions -> combine with And(...)
-        # e.g. ["Eq(x, y)", "x < 5"] -> "And(Eq(x, y), x < 5)"
-        return f"And({', '.join(converted)})"
+    return f"And({', '.join(converted)})"
 
-def preprocess_sympy(response: List[str]):
+
+def preprocess_sympy(response: List[str]) -> dict:
     """
-    Main entry point. 
-    1) Removes '_.', 
-    2) Converts '==' to Eq(...) but leaves <, >, etc. alone,
-    3) Splits by '&&' to produce And(...),
-    4) Attempts sympify
+    Main entry point:
+    1) Strip '_.' prefixes
+    2) Convert '==' -> Eq(), keep <, >, <=, >=, != untouched
+    3) Combine '&&' -> And(...)
+    4) Parse with evaluate=False to avoid auto-evaluation
     """
-    lines = response
-
-    print(f"successfully got the response it is {lines}")
-
     meta_data = {
         "symbols": [],
         "response": []
     }
 
-    # 1) Collect symbols
-    for line in lines:
-        symbols = re.findall(r"_\.(.)", line)  # e.g. "_.p" -> "p"
-        meta_data["symbols"].append(symbols)
-
-    # Flatten & remove duplicates
-    meta_data["symbols"] = sum(meta_data["symbols"], [])
+    # 1) Collect and dedupe symbols (_.x -> x)
+    for line in response:
+        syms = re.findall(r"_\.(.)", line)
+        meta_data["symbols"].extend(syms)
     meta_data["symbols"] = list(dict.fromkeys(meta_data["symbols"]))
-    print(f"The meta_data symbols without duplicates are {meta_data['symbols']}")
 
-    # 2) Remove '_.' from each line
-    cleaned_lines = []
-    for line in lines:
-        no_prefix = re.sub(r"_\.", "", line)
-        cleaned_lines.append(no_prefix)
+    # 2) Remove '_.' prefixes
+    cleaned = [re.sub(r"_\.", "", line) for line in response]
+    meta_data["response"] = cleaned
 
-    meta_data["response"] = cleaned_lines
-    print(f"Now the lines no longer have '_.' trailing: {meta_data['response']}")
+    # 3) Convert eqs and ands
+    eq_converted = [convert_equals_and_ands(line) for line in cleaned]
 
-    # 3) Convert '==' to Eq(...), '&&' to And(...). 
-    #    We keep <, >, etc. unaltered so they become normal Sympy inequalities.
-    eq_converted_lines = [convert_equals_and_ands(line) for line in meta_data["response"]]
-    print(f"Lines after converting '==' -> Eq() and '&&' -> And(): {eq_converted_lines}")
-
-    # 4) Sympify
-    processed_resp = []
-    for line in eq_converted_lines:
+    # 4) Parse each into a SymPy expression without evaluating
+    processed = []
+    for text in eq_converted:
         try:
-            expression = sympify(line)
-            processed_resp.append(expression)
-        except Exception as e:
-            print("Error in sympify:", e)
-            # If sympify fails, just store the raw string
-            processed_resp.append(line)
+            expr = parse_expr(
+                text,
+                transformations=transformations,
+                evaluate=False
+            )
+            processed.append(expr)
+        except Exception:
+            # On parse error, keep raw string
+            processed.append(text)
 
-    meta_data["response"] = processed_resp
-    print(f"The final sympified response is {meta_data['response']}")
-    
-    return {
-        "meta_data": meta_data
-    }
+    meta_data["response"] = processed
+    print(f"The final parsed response is {processed}")
+    return {"meta_data": meta_data}

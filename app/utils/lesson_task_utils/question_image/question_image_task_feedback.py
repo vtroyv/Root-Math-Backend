@@ -1,5 +1,6 @@
 from ....utils.others.preprocess_sympy import preprocess_sympy
 from ....utils.others.grade_sympy_response import evaluate_correctness
+from ....utils.others.grade_sympy_response_in_context import evaluate_context
 
 
 def feedback_question_image(response: dict) -> dict:
@@ -13,13 +14,22 @@ def feedback_question_image(response: dict) -> dict:
     """
     
     studentsResponse = response.compiledStrings
+    print(f"the compiled strings are {studentsResponse}")
     
     sympyResponse = preprocess_sympy(studentsResponse)
     
-    print(f"The sympy response is {sympyResponse}")
+    # print(f"The sympy response is {sympyResponse}")
     
     responseEvaluation= evaluate_correctness(sympyResponse)
     print('The evaluated response is ', responseEvaluation)
+    
+    
+    
+    
+    
+    
+    
+    
     
   
     
