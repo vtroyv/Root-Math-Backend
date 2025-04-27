@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 class TaskDetails(BaseModel):
     type: str
     title: str
@@ -98,7 +98,28 @@ class QuestionImage(BaseModel):
     taskType: str
     
 
+class CurveAndMFETaskDetails(BaseModel):
+    type: str
+    title: str
+    instructions: str
+    hint: str
+    gpt: str
+    latex: str
+    renderType: str
+    markScheme: Optional[Dict[str, Any]] = None
     
+class CurveAndMFETask(BaseModel):
+    status: str
+    task: CurveAndMFETaskDetails
+
+class CurveAndMFE(BaseModel):
+    task: CurveAndMFETask
+    compiledStrings: List[str]
+    reducedCoordinates: List[Dict[str, float]]
+    taskType: str
+   
+    
+        
 
     
     

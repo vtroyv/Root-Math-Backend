@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 from ..utils.others.preprocess_sympy import preprocess_sympy
 from ..utils.others.llm import grade_lesson_feedback, multiple_choice_image_response
-from ..models.lesson_response_model import StudentResponse, MultipleChoiceImage, Sketch, MultipleChoice, QuestionImage
+from ..models.lesson_response_model import StudentResponse, MultipleChoiceImage, Sketch, MultipleChoice, QuestionImage, CurveAndMFE
 from ..utils.others.preprocess_sympy import preprocess_sympy
 from ..utils.lesson_task_utils.sketch.lagrange_interpolation import lagrange_implementation
 from ..utils.lesson_task_utils.sketch.sketch_task_feedback import feedback_sketch_task
@@ -40,9 +40,15 @@ async def feedback_multiple_choice(response: MultipleChoice):
 
 @router.post("/image")
 async def feedback_image(response: QuestionImage):
-    
     feedback = feedback_question_image(response)
-    return 'test'
+    return feedback
+
+@router.post("/curve-and-mfe")
+async def feedback_curve_and_mfe(response: CurveAndMFE):
+    print(f"The response is {response}")
+    #Successfully recieving lesson data now add implementation logic
+    #Remember to make your code as reusable as possible particularly for checking equivalence of expected expressions and given expressions
+    pass
 
 @router.post("/")
 async def feedback(response: StudentResponse):

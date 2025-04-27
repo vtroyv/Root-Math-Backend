@@ -18,10 +18,25 @@ def evaluate_context(evaluatedResponse: List[Union[str,Tuple[str,bool]]], markSc
     USE LLM TO CREATE A MAJORITY VOTING SYSTEM TO CHECK THAT STUDENTS WORK INCLUDES CRITERIA IN MARKSCHEME 
     YOU SHOULDN"T NEED TO USE LLM TO PROVIDE FEEDBACK FOR MISSNG PARTS IN THE MARKSCHEME IF YOUR CODE CAN IDENTIFY WHAT PARTS ARE MISSNG 
     USE THE MISSNG PARTS IDENTIFIED TO HELP PROVIDE TAILORED FEEDBACK!
+    
+    
+    
+    CURRENT PROGRESS OF THIS FUNCTION:
+    ----------------------------------
+    Currently all this does is take in the results from the evaluate correctness function and makes sure all statements made are mathematically correct
+    Next we look at the criteria specified in the markscheme and check that all conditions are present in the students response. 
+    If everything the student has written is mathematically correct and satisfies all criteria specified within the markscheme we return correct alongside some hardcoded feedback
+    
+    I think the easiest way to improve this system is generate lots of test input responses with known output caes and then modify the code incrementally to ensure that each of the test cases 
+    is being correctly marked - ovbiously write code in a way that abstracts common patterns within questions until the system is robust 
+    
+    Also have a last resort robust llm exception handler case in situations where my code can't correctly mark!
   """
     
     all_statements_true =[]
     
+    isCorrect = None
+    feedback = None
     
     for i in evaluatedResponse:
         if type(i) == 'tuple':
@@ -57,18 +72,21 @@ def evaluate_context(evaluatedResponse: List[Union[str,Tuple[str,bool]]], markSc
         for j in evaluatedResponse:
             if type(j) == tuple: 
                 expr,_ = j
-                print(f"The expr is {expr} and the type is {type(expr)}")
                 if i['mark'].equals(expr):
                     criteria_satisfied.append(True)
                     continue
                 
-    print(f"The criteria satisfied is {criteria_satisfied}")
+    is_criteria_satisfied = all(criteria_satisfied)
     
-
-
-
+    if (all_true and is_criteria_satisfied):
+        isCorrect = True
+        feedback = 'Well done! Your answer is correct'
         
-    
-    return 'test'
+    else: 
+        isCorrect=False
+        feedback = 'Your answer is incorrect, please try again!'
+        
+        
+    return {"correct": isCorrect, "feedback": feedback}
     
     

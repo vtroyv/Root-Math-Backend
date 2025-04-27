@@ -31,10 +31,10 @@ def evaluate_correctness(
     """
   
     names = sympy_response['meta_data']['symbols']
-    print('THe names are ', names)
+
     syms = symbols(names)
     local_dict = dict(zip(names, syms))
-    print('The local_dict is ', local_dict)
+
     
     
     

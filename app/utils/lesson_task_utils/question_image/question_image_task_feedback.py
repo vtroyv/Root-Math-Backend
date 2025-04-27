@@ -28,7 +28,7 @@ def feedback_question_image(response: dict) -> dict:
     
     feedback = evaluate_context(responseEvaluation, markScheme)
     
-    print(f"The feedback returned is {feedback}", )
+    return feedback
     
     
     
