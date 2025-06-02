@@ -9,6 +9,7 @@ from ..utils.lesson_task_utils.sketch.lagrange_interpolation import lagrange_imp
 from ..utils.lesson_task_utils.sketch.sketch_task_feedback import feedback_sketch_task
 from ..utils.lesson_task_utils.multiple_choice.multiple_choice_task_feedback import multiple_choice_response
 from ..utils.lesson_task_utils.question_image.question_image_task_feedback import feedback_question_image
+from ..utils.lesson_task_utils.curve_and_mfe.curve_and_mfe_feedback import feedback_curve_and_mfe
 
 app = FastAPI()
 
@@ -44,8 +45,9 @@ async def feedback_image(response: QuestionImage):
     return feedback
 
 @router.post("/curve-and-mfe")
-async def feedback_curve_and_mfe(response: CurveAndMFE):
+async def feedback_curveMFE(response: CurveAndMFE):
     print(f"The response is {response}")
+    feedback = feedback_curve_and_mfe(response)
     #Successfully recieving lesson data now add implementation logic
     #Remember to make your code as reusable as possible particularly for checking equivalence of expected expressions and given expressions
     pass
