@@ -2,8 +2,8 @@ import os
 import json
 from dotenv import load_dotenv
 from openai import OpenAI
-from typing import Dict
-from pydantic import ValidationError
+from typing import Dict, List, Any
+from pydantic import ValidationError, RootModel,BaseModel
 from ...models.question_full_response_model import GPTStructuredResponse
 from ...models.lesson_response_model import GPTLessonStructedResponse
 
@@ -18,9 +18,12 @@ client = OpenAI(
 def grade_feedback(feedBackData: dict) -> dict:
     """
     Calls GPT to generate a structured marking response with a dynamic set of 'marks' keys.
+    // I need to first of all change this so that it returns the feedback in a manner that can be displayed nicely, 
+    # I also need to ensure that it is giving less assistance in regards to telling the answers and more incontext help!
+    //Also let's try utilize more 
     """
 
-    print(f"The question data for the llm is {feedBackData}")
+    # print(f"The question data for the llm is {feedBackData}")
     question_data = feedBackData["questionData"]
     structured_output_obj = question_data["structured-output"]
     student_work_sympy = feedBackData["usersSympyResponse"]
@@ -118,7 +121,7 @@ def grade_feedback(feedBackData: dict) -> dict:
     )
 
     raw_response = completion.choices[0].message.content.strip()
-    print(f"[DEBUG] GPT raw response: \n{raw_response}")
+    # print(f"[DEBUG] GPT raw response: \n{raw_response}")
 
     # STEP 6: Validate response with Pydantic
     try:
@@ -132,6 +135,92 @@ def grade_feedback(feedBackData: dict) -> dict:
             "error": "Invalid GPT Response format or schema",
             "raw_response": raw_response
         }
+
+
+class Block(BaseModel):
+    type: str
+    level: int = None      # for 'heading' blocks
+    content: str = None    # for 'heading' and 'paragraph' blocks
+    points: List[str] = None  # for 'bullet-points' blocks
+
+
+def grade_feedback_blocks(feedBackData: dict) -> List[Dict[str, Any]]:
+    """
+    Generates an array of blocks compatible with BlockRenderer:
+    - { type: 'heading', level: N, content: '...' }
+    - { type: 'paragraph', content: '...' }
+    - { type: 'bullet-points', points: [...] }
+    Wrap all math expressions in dollar signs, e.g. $x^2 + y^2$.
+    Double-escape any LaTeX backslashes (e.g. use \\\\sqrt).
+    """
+    question_data = feedBackData.get("questionData", {})
+    structured_output = question_data.get("structured-output", {})
+    student_response = feedBackData.get("usersSympyResponse", "")
+
+    # Example blocks schema
+    example_blocks = [
+        {"type": "heading", "level": 2, "content": "Feedback"},
+        {"type": "paragraph", "content": "Your solution shows good understanding."},
+        {"type": "bullet-points", "points": [
+            "Correct expansion: $p^2 + 2pq + q^2$.",
+            "Check simplification of final term."
+        ]}
+    ]
+    example_str = json.dumps(example_blocks, indent=2)
+
+    # System prompt enforcing JSON schema
+    system_content = (
+        "Return ONLY a JSON array of objects (no markdown, no extra keys) where each object is one of:\n"
+        "- { type: 'heading', level: <int>, content: '<string>' }\n"
+        "- { type: 'paragraph', content: '<string>' }\n"
+        "- { type: 'bullet-points', points: ['<string>', ...] }\n\n"
+        "Wrap all mathematical expressions in dollar signs, e.g. $x^2 + y^2$.\n"
+        "Double-escape any LaTeX backslashes, e.g. use \\\\sqrt instead of \\\\sqrt.\n\n"
+        "Ensure the output matches this example shape exactly:\n"
+        f"{example_str}\n"
+    )
+
+    # Build messages
+    criteria_text = "".join(f"- {inst}\n" for key, inst in structured_output.items() if key not in ('totalMarks','finalFeedback'))
+    user_content = (
+        f"Here is the student's Sympy response:\n{student_response}\n\n"
+        "Based on the marking criteria below, generate structured feedback blocks as described.\n"
+        + criteria_text
+        + f"Total marks guidance: {structured_output.get('totalMarks','')}\n"
+        + f"Overall summary instructions: {structured_output.get('finalFeedback','')}"
+    )
+    messages = [
+        {"role": "system", "content": system_content},
+        {"role": "user", "content": user_content}
+    ]
+
+    resp = client.chat.completions.create(
+        model="chatgpt-4o-latest",
+        messages=messages,
+        temperature=0.3,
+        max_tokens=1500,
+        store=True
+    )
+
+    raw = resp.choices[0].message.content.strip()
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Response not valid JSON: {e}\nRaw response:\n{raw}")
+
+    blocks = []
+    errors = []
+    for idx, item in enumerate(data):
+        try:
+            block = Block.parse_obj(item)
+            blocks.append(block)
+        except ValidationError as ve:
+            errors.append(f"Block {idx} invalid: {ve}")
+
+    if errors:
+        raise ValueError("Invalid block structure:\n" + "\n".join(errors) + f"\nRaw response:\n{raw}")
+
+    return [blk.dict(exclude_none=True) for blk in blocks]
 
 
 def sketch_feedback(feedBackData: dict) -> dict:

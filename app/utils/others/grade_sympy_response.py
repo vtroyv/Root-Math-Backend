@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Union
-from sympy import symbols, sympify, S, Implies, Equality, simplify
+from sympy import symbols, sympify, S, Implies, Equality, simplify, And
 from sympy.core.sympify import SympifyError
 from sympy.core.relational import Relational
 from sympy.solvers.inequalities import reduce_inequalities
@@ -16,7 +16,6 @@ def eq_algebraically_same(eq1: Equality, eq2: Equality) -> bool:
 
 
 
-
 def evaluate_correctness(
     sympy_response: Dict[str, Any]
 ) -> List[Union[str, bool]]:
@@ -24,67 +23,121 @@ def evaluate_correctness(
     Grade a mixed list of text and Sympy expressions:
     - Text stays as-is
     - Boolean/inequality tautologies collapse to True/False
-    
-    NOTES TO REMEMBER:
-    -Implies(A,B) if A is false this will always return True, so be mindful,
-    you may need to create  a work around for this or instead see if something can be rearrange into something else
     """
-  
-    names = sympy_response['meta_data']['symbols']
+    # ─── Helpers ────────────────────────────────────────────────
 
+    def is_nonneg(expr):
+        """Returns True if expr is guaranteed >= 0 (even powers, .is_nonnegative==True)."""
+        nn = expr.is_nonnegative
+        if nn is True:
+            return True
+        if expr.is_Pow and expr.exp.is_integer and expr.exp % 2 == 0:
+            # e.g. (p-q)**2, x**4, etc.
+            return True
+        return False
+
+    def sq_test(lhs, rhs):
+        """Check lhs ≤ rhs by squaring: (rhs**2 - lhs**2) >= 0."""
+        sq_diff = simplify(rhs**2 - lhs**2)
+        return is_nonneg(sq_diff)
+
+    def eval_rel(r):
+        """
+        Evaluate a Relational r to True/False/None:
+        - univariate: uses reduce_inequalities
+        - multivariate ≤/≥: uses is_nonneg & sq_test
+        """
+        syms_r = list(r.free_symbols)
+        # 1) univariate
+        if len(syms_r) == 1:
+            taut = reduce_inequalities([r], syms_r[0])
+            if taut in (True, S.true):
+                return True
+            if taut in (False, S.false):
+                return False
+            return None
+
+        # 2) multivariate
+        op = r.rel_op
+        if op == '<=':
+            # sqrt on lhs?
+            if r.lhs.is_Pow and r.lhs.exp == S.Half:
+                return sq_test(r.lhs, r.rhs)
+            # sqrt on rhs?
+            if r.rhs.is_Pow and r.rhs.exp == S.Half:
+                return sq_test(r.lhs, r.rhs)
+            # plain diff
+            return is_nonneg(simplify(r.rhs - r.lhs))
+
+        if op == '>=':
+            if r.lhs.is_Pow and r.lhs.exp == S.Half:
+                return sq_test(r.rhs, r.lhs)
+            if r.rhs.is_Pow and r.rhs.exp == S.Half:
+                return sq_test(r.rhs, r.lhs)
+            return is_nonneg(simplify(r.lhs - r.rhs))
+
+        # strict '<' or '>' we leave as unknown
+        return None
+
+    # ─── Setup ─────────────────────────────────────────────────
+
+    names = sympy_response['meta_data']['symbols']
     syms = symbols(names)
     local_dict = dict(zip(names, syms))
 
-    
-    
-    
-    
     out: List[Union[str, bool]] = []
-    eq_ineq = []
+
+    # ─── Main loop ─────────────────────────────────────────────
+
     for piece in sympy_response['meta_data']['response']:
-        expr=None
-        
+        # parse into expr
         if isinstance(piece, str):
             try:
                 if 'Implies' in piece:
                     expr = parse_expr(piece, local_dict=local_dict, evaluate=False)
-                    # print(f"The expr is {expr}")
                 else:
-                     expr = sympify(piece, locals=local_dict)
-                    #  print(f"The expr is {expr} and the type of  expr is {type(expr)}")
+                    expr = sympify(piece, locals=local_dict)
             except (SympifyError, TypeError):
                 out.append(piece)
                 continue
         else:
-            expr = piece  # already a Sympy object
-            # print(f"The type of expr is {type(expr)}")
-            
-        #2) Now we check if its a Implies instance and if so check for false antecedenat
-        if isinstance(expr, Implies):
-            A,B = expr.args
-            # print(f"The args are {A} and {B}")
-            if bool(expr) and expr.args[0] == True:
-                # print("The implication is coming as True")
-                out.append(True)
-            elif isinstance(A, Equality) and isinstance(B,Equality):
-                
-                eq_ineq.append(A)
-                eq_ineq.append(B)
-                antecdent = simplify_logic(A)
-                # print(f"The antecdent is {antecdent}")
-                if antecdent != True:
-                    #check if algebraically equalivalent
-                    if eq_algebraically_same(A,B): 
-                        # print(f"The two args are algebraically equivalent")
-                        out.append(True)
-                        continue
-                    else:
-                        out.append(False)
-                        continue 
-           
-                           
+            expr = piece
 
-        # 3) Constant booleans
+        # 1) And of Equalities
+        if isinstance(expr, And):
+            ok = all(
+                isinstance(cl, Equality) and simplify(cl.lhs - cl.rhs) == 0
+                for cl in expr.args
+            )
+            out.append(ok)
+            continue
+
+        # 2) Implies
+        if isinstance(expr, Implies):
+            A, B = expr.args
+            # 2a) any vacuously- or trivially-true implication
+            if bool(expr):
+                out.append(True)
+                continue
+            # 2b) Eq→Eq
+            if isinstance(A, Equality) and isinstance(B, Equality):
+                out.append(eq_algebraically_same(A, B))
+                continue
+            # 2c) Relational→Relational
+            if isinstance(A, Relational) and isinstance(B, Relational):
+                A_val = eval_rel(A)
+                B_val = eval_rel(B)
+                if A_val is False:
+                    out.append(True)
+                    continue
+                if A_val is True:
+                    out.append(B_val is True)
+                    continue
+            # fallback
+            out.append(piece)
+            continue
+
+        # 3) True/False constants
         if expr is S.true:
             out.append(True)
             continue
@@ -92,31 +145,16 @@ def evaluate_correctness(
             out.append(False)
             continue
 
-        # 4) Univariate inequalities
+        # 4) Stand‑alone Relational
         if isinstance(expr, Relational) and expr.free_symbols:
-            try:
-                taut = reduce_inequalities([expr], *expr.free_symbols)
-        
-                
-                if taut is True or taut is S.true:
-                    out.append(True)
-                elif taut is False or taut is S.false:
-                    out.append(False)
-                
-                elif isinstance(expr, Equality) and simplify(expr.lhs - expr.rhs)== 0:
-                    print(f"This elif ran")
-                    out.append(True)
-           
-                else: 
-                    print('This else statement ran here')
-                    out.append(piece)
-                
-            except Exception:
-                print('This expception occured')
+            res = eval_rel(expr)
+            if res is True or res is False:
+                out.append(res)
+            else:
                 out.append(piece)
             continue
 
-        # 5) Propositional logic (And, Or, Implies, etc.)
+        # 5) Propositional BooleanFunction
         if isinstance(expr, BooleanFunction):
             simp = simplify_logic(expr, force=True)
             if getattr(simp, 'is_true', False):
@@ -129,15 +167,10 @@ def evaluate_correctness(
         # 6) Fallback
         out.append(piece)
 
-    # print('The output is ', out)
-    # print('The eq_ineq is ', eq_ineq)
-    
+    # collapse identicals for nicer output
     grouped = zip(sympy_response['meta_data']['response'], out)
-    evaluated_response = [(x,y) if x != y else x for x,y in grouped ]
-    
-
-    return evaluated_response
-   
+    evaluated = [(x, y) if x != y else x for x, y in grouped]
+    return evaluated
 
 
 

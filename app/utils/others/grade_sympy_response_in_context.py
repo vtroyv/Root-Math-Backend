@@ -13,7 +13,7 @@ def evaluate_context(evaluatedResponse: List[Union[str,Tuple[str,bool]]], markSc
     
     IF IT"S FULLY MATHEMATICALLY CORRECT BUT IF MARKSCHEME ONLY PARTIALLY HIT USE THE MISSING PARTS OF THE MARKSCHEME TO RETURN FEEDBACK
     
-    POTENTIALLY USE SEMANTIC SIMILARITY BUT WITH MATHS TO COVER STUDENTS HITTING MARKSCHEME CRITERIA BUT BEING DISCOUNTED
+    POTENTIALLY USE SEMANTIC SIMILARITY BUT WITH MATHS TO PROTECT AGAINST STUDENTS HITTING MARKSCHEME CRITERIA BUT BEING DISCOUNTED
     
     USE LLM TO CREATE A MAJORITY VOTING SYSTEM TO CHECK THAT STUDENTS WORK INCLUDES CRITERIA IN MARKSCHEME 
     YOU SHOULDN"T NEED TO USE LLM TO PROVIDE FEEDBACK FOR MISSNG PARTS IN THE MARKSCHEME IF YOUR CODE CAN IDENTIFY WHAT PARTS ARE MISSNG 
@@ -31,6 +31,36 @@ def evaluate_context(evaluatedResponse: List[Union[str,Tuple[str,bool]]], markSc
     is being correctly marked - ovbiously write code in a way that abstracts common patterns within questions until the system is robust 
     
     Also have a last resort robust llm exception handler case in situations where my code can't correctly mark!
+    
+    //So what i should essentially do is upgrade the response so that it, checks according to the markscheme that may look like: 
+    
+    markScheme  ={
+        marks: [
+            {
+                mark: '0 <=(x-3)**2', 
+                explanation:'Student must include the fact that (x-3)**2 is >= 0', 
+                order:1
+                },
+            {
+                mark: 'Ne((x - 3)**2, -1)', 
+                explanation: 'Student must use the fact that (x-3)**2 is >= 0 to deduce (Ne((x - 3)**2, -1)', 
+                order:2
+            }  
+                ]
+        symbols:'x'
+                
+    }
+    ########################################################
+    #i think the explanations can be used to prompt GPT, 
+    #but what i need to do is have a feedback for each explanation where if it's present we return well done for 'xyz' 1 mark
+    #or if it's missing mention it unfortunately 'your response was missing 'xyz'
+    #next if everything is mathematically correct from the first function 
+    ########################################################
+    
+    so maybe first check that everything is correct from the first function, 
+    then check for the presence of things in the second function. 
+    if everything is correct in the first function, 
+    
   """
     
     all_statements_true =[]

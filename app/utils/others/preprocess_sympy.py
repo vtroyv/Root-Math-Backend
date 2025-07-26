@@ -94,5 +94,5 @@ def preprocess_sympy(response: List[str]) -> dict:
             processed.append(text)
 
     meta_data["response"] = processed
-    print(f"The final parsed response is {processed}")
+    # print(f"The final parsed response is {processed}")
     return {"meta_data": meta_data}
