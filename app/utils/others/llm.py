@@ -159,7 +159,7 @@ def grade_feedback_blocks(feedBackData: dict) -> List[Dict[str, Any]]:
 
     # Example blocks schema
     example_blocks = [
-        {"type": "heading", "level": 2, "content": "Feedback"},
+        {"type": "heading", "level": 2, "content": "Comments"},
         {"type": "paragraph", "content": "Your solution shows good understanding."},
         {"type": "bullet-points", "points": [
             "Correct expansion: $p^2 + 2pq + q^2$.",
@@ -170,15 +170,28 @@ def grade_feedback_blocks(feedBackData: dict) -> List[Dict[str, Any]]:
 
     # System prompt enforcing JSON schema
     system_content = (
-        "Return ONLY a JSON array of objects (no markdown, no extra keys) where each object is one of:\n"
-        "- { type: 'heading', level: <int>, content: '<string>' }\n"
-        "- { type: 'paragraph', content: '<string>' }\n"
-        "- { type: 'bullet-points', points: ['<string>', ...] }\n\n"
-        "Wrap all mathematical expressions in dollar signs, e.g. $x^2 + y^2$.\n"
-        "Double-escape any LaTeX backslashes, e.g. use \\\\sqrt instead of \\\\sqrt.\n\n"
-        "Ensure the output matches this example shape exactly:\n"
-        f"{example_str}\n"
+        "Return ONLY a single JSON object **no markdown**, with exactly two keys:\n\n"
+        "  1) \"feedbackBlocks\": an array of blocks of shape\n"
+        "       { type: 'heading', level: <int>, content: '<string>' }\n"
+        "       or { type: 'paragraph', content: '<string>' }\n"
+        "       or { type: 'bullet-points', points: ['<string>', …] }\n\n"
+        "  2) \"isCorrect\": a Boolean, true if the student earned all the marks (i.e. 4/4), false otherwise.\n\n"
+        "Wrap every math expression in dollar signs ($…$) and double-escape backslashes (\\\\sqrt).  \n"
+        "Here’s an example output:\n"
+        '{\n'
+        '  "feedbackBlocks": [\n'
+        '    { "type": "heading", "level": 2, "content": "Comments" },\n'
+        '    { "type": "paragraph", "content": "Good algebraic manipulation." },\n'
+        '    { "type": "bullet-points", "points": [\n'
+        '       "Correct expansion: $p^2 + 2pq + q^2$.",\n'
+        '       "Remember to take the square root of both sides."\n'
+        '     ] }\n'
+        '  ],\n'
+        '  "isCorrect": false\n'
+        '}'
     )
+
+    
 
     # Build messages
     criteria_text = "".join(f"- {inst}\n" for key, inst in structured_output.items() if key not in ('totalMarks','finalFeedback'))
@@ -201,26 +214,31 @@ def grade_feedback_blocks(feedBackData: dict) -> List[Dict[str, Any]]:
         max_tokens=1500,
         store=True
     )
-
     raw = resp.choices[0].message.content.strip()
     try:
-        data = json.loads(raw)
+        parsed = json.loads(raw)
     except json.JSONDecodeError as e:
         raise ValueError(f"Response not valid JSON: {e}\nRaw response:\n{raw}")
 
+    # extract our two keys
+    feedback_blocks = parsed["feedbackBlocks"]
+    is_correct      = parsed["isCorrect"]
+
+    # validate each block as before
     blocks = []
     errors = []
-    for idx, item in enumerate(data):
+    for idx, item in enumerate(feedback_blocks):
         try:
-            block = Block.parse_obj(item)
-            blocks.append(block)
+            blocks.append(Block.parse_obj(item).dict(exclude_none=True))
         except ValidationError as ve:
             errors.append(f"Block {idx} invalid: {ve}")
 
     if errors:
         raise ValueError("Invalid block structure:\n" + "\n".join(errors) + f"\nRaw response:\n{raw}")
 
-    return [blk.dict(exclude_none=True) for blk in blocks]
+    return {'feedback':blocks, 'status':is_correct}
+
+    
 
 
 def sketch_feedback(feedBackData: dict) -> dict:

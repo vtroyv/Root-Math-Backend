@@ -23,7 +23,7 @@ async def feedback(response: StudentResponse):
     # print(f"The data is given by the following{data['meta_data']['response']}")
     
     mathematicallyCorrect = evaluate_correctness(data)
-    print(f"is the response mathematically correct? {mathematicallyCorrect}")
+    # print(f"is the response mathematically correct? {mathematicallyCorrect}")
     
     feedbackData = {
         "usersSympyResponse": data['meta_data']['response'],
@@ -39,8 +39,8 @@ async def feedback(response: StudentResponse):
     
     structured_result = grade_feedback_blocks(feedbackData)
     
-    
+    print(f"The data returned to nextjs is {structured_result}")
    
-    return {"feedback": structured_result}
+    return structured_result
 
 app.include_router(router)
