@@ -1,10 +1,21 @@
 from ..sketch.limits import limit
 from ..sketch.graph import graph
+from ....utils.others.llm import llm_sketch_feedback
+
+# Now i should simply just adapt this to handle requests coming from both questionsByTopics and 
+
+# ALSO handle the case where no reduced Coordinates are given and in this case, provide generic
+#  feedback like draw a sketch to get feedbak
+
+# 
 def feedback_sketch_task(response):
-    tool = response.task.task.marking['tool']
     
-    
-    
+    try:
+         tool = response.task.task.marking['tool'] 
+    except(AttributeError):
+        tool = response.questionData['marking']['tool']
+        
+    print('The tool in this case is ', tool)
     if tool == 'limit':
         #You need to call the limits function here, however, at this point everything is a task, 
         #You need to have logic that extracts the reduced Coordinates, or function. 
@@ -37,7 +48,11 @@ def feedback_sketch_task(response):
         
     if (isinstance(tool, list)):
         print(f'This question requires multiple functions to mark it requires {tool}')
-        guide= response.task.task.marking['guide']
+        try:
+            guide= response.task.task.marking['guide']
+        except(AttributeError):
+            guide = response.questionData['marking']['guide']
+        
         
         tools_output = []
         for i in tool:
@@ -47,6 +62,9 @@ def feedback_sketch_task(response):
                     tools_output.append(limit(coords,guide))
                 #You may need to add somelogic here for correctly passing in a funciton, 
                 #If you need to compute  a limit, but have the function instead of coords 
+                
+                
+                
             elif i == 'graph':
                 coords = response.reducedCoordinates
                 tools_output.append(graph(coords, guide))
@@ -60,11 +78,20 @@ def feedback_sketch_task(response):
         #In this case you must call two functions the limit function and also create and build a graph function, which should work by using the reduced coords to create a estimation of the curve
         #Then simply evaluate it using the graph-values (which correspond to the correct input and output of an actual graph, and then  have logic to check if each tool is correct
         truth_list = []
+        print('The tools output is ', tools_output)
         for i in tools_output:
             truth_list.append(i['correct'])
         
         correct = all(truth_list)
-        return {'correct': correct, 'feedback':'Currently -hardcoded feedback'}
+        if correct: 
+            return {'correct': correct, 'feedback': response.questionData['marking']['guide']['feedback']['all-correct']}
+        
+        else:
+          print('The coorsd that we send are ', coords)  
+          feedback = llm_sketch_feedback(coords,tools_output,guide )
+          
+          return {'correct': correct, 'feedback': feedback}
+        
             
 
     

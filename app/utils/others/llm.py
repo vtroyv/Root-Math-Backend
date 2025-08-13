@@ -241,8 +241,21 @@ def grade_feedback_blocks(feedBackData: dict) -> List[Dict[str, Any]]:
     
 
 
-def sketch_feedback(feedBackData: dict) -> dict:
-    pass
+def llm_sketch_feedback(reduced_points:list, tools_output:list, guide:dict) -> List[Dict[str,Any]]:
+    system={
+        "role":"system", 
+        "content":(
+            "You are a skilled math tutor. A student sketched a curve and you have numerical "
+            "you have numerical checks at labeled key features (roots, intercepts, turning points). "
+            "For each incorrect feature, DO NOT GIVE THE ANSWER, but guide them mathematically: \n"
+            "- Remind them which equation or formula they should re-derive (e.g. \"set f(x)=0 and apply the quadratic formula \").\n"
+            "- Point out common algebraic pitfalls (sign errors, forgetting to divide by 2a, etc.).\n"
+            "Keep feedback concise and always refer to eaach feature by it's label "
+        )
+        
+        
+    }
+    
 
 def grade_lesson_feedback(feedBackData: dict) -> dict:
     """
@@ -348,7 +361,6 @@ def multiple_choice_image_response(feeddBackData: dict) -> dict:
     
     # This function will be slightly different starting off in the initial MVP version it won't be using any llm powered capabilities
     # However down the line I seek to use llm powered capabilities to input actual images and provide more unique feedback
-    
     #FIRST OF ALL YOU NEED TO READ THE EXPLANATION AND CORRECT OR INCORRECT FROM THE TASK
     print('The feedback data is ', feeddBackData)
     return ({

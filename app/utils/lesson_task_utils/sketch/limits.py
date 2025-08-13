@@ -23,9 +23,12 @@ def limit(func, guide: dict) -> dict:
          - "correct": bool indicating if all comparisons were acceptable.
          - "comparison": list of tuples (output_value, target_value) for each limit point.
     """
+    
+    # lets take some information in essentially on the curve
     if isinstance(func, list):
+        print('the func is ', func)
         lagrange_func = lagrange_implementation(func)
-        print('The limits guide is:', guide)
+        # print('The limits guide is:', guide)
         
         # Extract limit values from the guide
         limit_values = guide['limit-values']
@@ -43,7 +46,7 @@ def limit(func, guide: dict) -> dict:
         for x_val in x_values:
             output_values.append(lagrange_func.subs(x, x_val).evalf())
             
-        print(f"The output values are: {output_values}")
+        # print(f"The output values are: {output_values}")
         
         # Compare each output value with its corresponding target value and threshold.
         truth_list = []
@@ -67,13 +70,13 @@ def limit(func, guide: dict) -> dict:
         
         # Create a combined comparison list for debugging or output
         comparison_list = list(zip(output_values, target_values))
-        print(f"Comparison list: {comparison_list}")
-        print(f"Truth list: {truth_list}")
+        # print(f"Comparison list: {comparison_list}")
+        # print(f"Truth list: {truth_list}")
             
         correct = all(truth_list)
-        print('Final comparison:', comparison_list)
+        # print('Final comparison:', comparison_list)
         
-        return {"correct": correct, "comparison": comparison_list}
+        return {"correct": correct, "comparison": comparison_list, "meteric":"limits"}
     
     else: 
         # Put implementation logic here for the case where func is not a list
