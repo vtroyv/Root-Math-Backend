@@ -81,3 +81,7 @@ def limit(func, guide: dict) -> dict:
     else: 
         # Put implementation logic here for the case where func is not a list
         pass
+
+
+# if the polynomial is of degree n, you need (n+1) points to specify it uniquely e.g. all the roots and the y-intercept, 
+# so for questions where you specify the polynomial specifically that you want them to draw you can do it 

@@ -241,20 +241,46 @@ def grade_feedback_blocks(feedBackData: dict) -> List[Dict[str, Any]]:
     
 
 
-def llm_sketch_feedback(reduced_points:list, tools_output:list, guide:dict) -> List[Dict[str,Any]]:
-    system={
-        "role":"system", 
-        "content":(
-            "You are a skilled math tutor. A student sketched a curve and you have numerical "
-            "you have numerical checks at labeled key features (roots, intercepts, turning points). "
-            "For each incorrect feature, DO NOT GIVE THE ANSWER, but guide them mathematically: \n"
-            "- Remind them which equation or formula they should re-derive (e.g. \"set f(x)=0 and apply the quadratic formula \").\n"
-            "- Point out common algebraic pitfalls (sign errors, forgetting to divide by 2a, etc.).\n"
-            "Keep feedback concise and always refer to eaach feature by it's label "
-        )
+def llm_sketch_feedback(coords:list, tools_output:list, guide:dict) -> List[Dict[str,Any]]:
+   
+    # print('the tools output in llm is', tools_output)
+
+    
+    in_correct_features = []
+    
+    comparison_list = tools_output[0]['comparison']
+    
+    for i in comparison_list:
+        if (i['is_correct'] != True):
+            in_correct_features.append(i['label'])
+            
         
+    
+    guidance = guide['feedback']['response']
+    
+    
+    # Now lets get a list of the labels which we will cross check with the response object
+    print('the coords are ', coords)
+    print('the guidance for the llm is ', guidance)
+    
+    print('the incorrect features are ', in_correct_features)
+    
+    labels=[]
+    for i in coords:
+        labels.append(i['label'])
+    
+    if (len(labels) == len(in_correct_features)):
+        return guidance['all']
+    
+    else:
+        pass
         
-    }
+    
+    
+
+   
+    
+
     
 
 def grade_lesson_feedback(feedBackData: dict) -> dict:

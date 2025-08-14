@@ -16,7 +16,7 @@ def graph(coords: list, guide: dict) -> dict:
     
     graph_values = guide['graph-values']
     lagrange_func = lagrange_implementation(coords)
-    print('the coords are ', coords)
+    # print('the coords are ', coords)
     
     x_values = []
     target_values = []
@@ -44,9 +44,9 @@ def graph(coords: list, guide: dict) -> dict:
         thresholds.append(i['threshold'])
         
     
-    print('the x values are ', x_values )
-    print('the target values are ', target_values)
-    print('the new target values are ', new_target_values)
+    # print('the x values are ', x_values )
+    # print('the target values are ', target_values)
+    # print('the new target values are ', new_target_values)
     
     x = symbols('x')
     for x_val in x_values:
@@ -88,7 +88,7 @@ def graph(coords: list, guide: dict) -> dict:
     new_comparison_list = []
     for user_pt, targ_pt in zip(coords, graph_values ):
         if user_pt['label'] == targ_pt['label']:
-            if (abs(user_pt['x'] - targ_pt['x'] < targ_pt['threshold']) and abs(user_pt['y'] - targ_pt['y']) < targ_pt['threshold']):
+            if (abs(user_pt['x'] - targ_pt['x']) < targ_pt['threshold'] and abs(user_pt['y'] - targ_pt['y']) < targ_pt['threshold']):
                 new_truth_list.append(True)
                 new_comparison_list.append({'label':user_pt['label'], 'user_point':{'x':user_pt['x'], 'y':user_pt['y']}, 'target_point':{'x':targ_pt['x'], 'y':targ_pt['y']}, "is_correct":True})
             else:
@@ -98,7 +98,7 @@ def graph(coords: list, guide: dict) -> dict:
             
 
     new_correct= all(new_truth_list)
-    print('the new comparsion list is ', new_comparison_list)
+    # print('the new comparsion list is ', new_comparison_list)
     
     
     # return {"correct": correct, "comparison": comparison_list, "metric":"graph values"}
